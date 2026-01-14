@@ -1,27 +1,27 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
-from typing import List, Optional
-
-app = FastAPI(title="Smart Material Selector", version="0.1.0")
-
-
-@app.get("/health")
-def health_check():
-    return {"status": "ok", "service": "smart-material-selector"}
-
-
-class SelectRequest(BaseModel):
-    # مثال بسيط: المستخدم يرسل أسماء مواد + اختيار اختياري "هدف"
-    materials: List[str]
-    goal: Optional[str] = None
-
-
 @app.post("/select")
 def select_material(payload: SelectRequest):
-    # مؤقتًا: نرجّع أول مادة كـ “أفضل اختيار”
-    chosen = payload.materials[0] if payload.materials else None
+    scores = {
+        "lightweight": {"Steel": 3, "Aluminum": 8, "Carbon Fiber": 10},
+        "strong": {"Steel": 9, "Aluminum": 6, "Carbon Fiber": 8},
+        "low_cost": {"Steel": 10, "Aluminum": 6, "Carbon Fiber": 2},
+    }
+
+    goal = (payload.goal or "lightweight").strip().lower()
+    goal_scores = scores.get(goal, {})
+
+    best_material = None
+    best_score = -1
+
+    for m in payload.materials:
+        s = goal_scores.get(m, 0)
+        if s > best_score:
+            best_material = m
+            best_score = s
+
     return {
-        "chosen_material": chosen,
-        "goal": payload.goal,
-        "note": "Demo selector (temporary). Next step: replace with real scoring logic."
+        "chosen_material": best_material,
+        "score": best_score,
+        "goal": goal,
+        "materials": payload.materials,
+        "note": "Demo scoring. Next: use a real materials dataset."
     }
